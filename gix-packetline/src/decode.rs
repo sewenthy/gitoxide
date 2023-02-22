@@ -72,7 +72,7 @@ pub fn hex_prefix(four_bytes: &[u8]) -> Result<PacketLineOrWantedSize<'_>, Error
     }
 
     let mut buf = [0u8; U16_HEX_BYTES / 2];
-    hex::decode_to_slice(four_bytes, &mut buf).map_err(|err| Error::HexDecode { err: err.to_string() })?;
+    hex::decode_to_slice(four_bytes, &mut buf).map_err(|err| Error::HexDecode { err: err.to_string() }).unwrap();
     let wanted_bytes = u16::from_be_bytes(buf);
 
     if wanted_bytes == 3 {
