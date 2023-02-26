@@ -41,7 +41,7 @@ pub fn pattern(mut pat: &[u8]) -> Option<(BString, pattern::Mode, Option<usize>)
         mode |= Mode::ENDS_WITH;
     }
 
-    let pos_of_first_wildcard = first_wildcard_pos(&pat);
+    let pos_of_first_wildcard = pat.find_byteset(GLOB_CHARACTERS);
     Some((pat, mode, pos_of_first_wildcard))
 }
 
