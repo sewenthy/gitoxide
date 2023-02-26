@@ -64,11 +64,7 @@ fn resolve_includes_recursive(
             }
         }
         if add_path {
-            if let Some(body) = target_config.sections.get(&id) {
-                let paths = body.values(&Key::from("path"));
-                let paths = paths.iter().map(|path| values::Path::from(path.clone()));
-                include_paths.extend(paths);
-            }
+            bar(target_config, id, &mut include_paths);
         }
     }
 
@@ -87,6 +83,14 @@ fn resolve_includes_recursive(
         target_config.append(include_config);
     }
     Ok(())
+}
+
+fn bar(target_config: &mut File, id: super::SectionId, include_paths: &mut Vec<values::Path>) {
+    if let Some(body) = target_config.sections.get(&id) {
+        let paths = body.values(&Key::from("path"));
+        let paths = paths.iter().map(|path| values::Path::from(path.clone()));
+        include_paths.extend(paths);
+    }
 }
 
 fn include_condition_match(
