@@ -111,7 +111,15 @@ fn lock_with_mode<T>(
     try_lock: impl Fn(&Path, ContainingDirectory, AutoRemove) -> std::io::Result<T>,
 ) -> Result<(PathBuf, T), Error> {
     use std::io::ErrorKind::*;
-    let (directory, cleanup) = dir_cleanup(boundary_directory);
+    let (directory, cleanup) =  {
+        match boundary_directory {
+            None => (ContainingDirectory::Exists, AutoRemove::Tempfile),
+            Some(boundary_directory) => (
+                ContainingDirectory::CreateAllRaceProof(Default::default()),
+                AutoRemove::TempfileAndEmptyParentDirectoriesUntil { boundary_directory },
+            ),
+        }
+    };
     let lock_path = add_lock_suffix(resource);
     let mut attempts = 1;
     match mode {
