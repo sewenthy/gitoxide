@@ -7,6 +7,7 @@ use std::{
 
 use gix_config::parse::section;
 use gix_discover::DOT_GIT_DIR;
+use gix_discover::path::without_dot_git_dir;
 
 /// The error used in [`into()`].
 #[derive(Debug, thiserror::Error)]
@@ -165,7 +166,9 @@ pub fn into(
     create_dir(&dot_git)?;
 
     {
-        let mut cursor = NewDir(&mut dot_git).at("info")?;
+        dot_git.push("info");
+        create_dir(&dot_git).unwrap();
+        let mut cursor = NewDir(&mut dot_git);
         write_file(TPL_INFO_EXCLUDE, PathCursor(cursor.as_mut()).at("exclude"))?;
     }
 
