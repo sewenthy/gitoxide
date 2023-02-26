@@ -30,6 +30,13 @@ use bstr::BStr;
 /// Validate a reference name running all the tests in the book. This disallows lower-case references, but allows
 /// ones like `HEAD`.
 pub fn name(path: &BStr) -> Result<&BStr, name::Error> {
+    match fun_name(path) {
+        Ok(value) => value,
+        Err(value) => return value,
+    }
+}
+
+fn fun_name(path: &BStr) -> Result<&BStr, name::Error> {
     crate::tagname(path).unwrap();
     if path[0] == b'/' {
         return Err(name::Error::StartsWithSlash);
