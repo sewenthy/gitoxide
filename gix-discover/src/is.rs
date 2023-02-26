@@ -141,10 +141,24 @@ pub fn git(git_dir: impl AsRef<Path>) -> Result<crate::repository::Kind, crate::
         Kind::MaybeRepo => {
             if bare(git_dir) {
                 crate::repository::Kind::Bare
-            } else if submodule_git_dir(git_dir) {
-                crate::repository::Kind::SubmoduleGitDir
             } else {
-                crate::repository::Kind::WorkTree { linked_git_dir: None }
+
+                let mut last_comp = None;
+                let is_submodule_git_dir = git_dir.file_name() != Some(OsStr::new(DOT_GIT_DIR))
+                    && git_dir.components().rev().any(|c| {
+                        if c.as_os_str() == OsStr::new(DOT_GIT_DIR) {
+                            true
+                        } else {
+                            last_comp = Some(c.as_os_str());
+                            false
+                        }
+                    })
+                    && last_comp == Some(OsStr::new(MODULES));
+                if is_submodule_git_dir {
+                    crate::repository::Kind::SubmoduleGitDir
+                } else {
+                    crate::repository::Kind::WorkTree { linked_git_dir: None }
+                }
             }
         }
     })
