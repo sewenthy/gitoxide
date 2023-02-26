@@ -1,30 +1,25 @@
+use crate::{backoff, File, Marker, DOT_LOCK_SUFFIX};
+use gix_tempfile::{AutoRemove, ContainingDirectory};
+use quick_error::quick_error;
 use std::{
     fmt,
     path::{Path, PathBuf},
     time::Duration,
 };
-
-use gix_tempfile::{AutoRemove, ContainingDirectory};
-use quick_error::quick_error;
-
-use crate::{backoff, File, Marker, DOT_LOCK_SUFFIX};
-
-/// Describe what to do if a lock cannot be obtained as it's already held elsewhere.
+#[doc = " Describe what to do if a lock cannot be obtained as it's already held elsewhere."]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Fail {
-    /// Fail after the first unsuccessful attempt of obtaining a lock.
+    #[doc = " Fail after the first unsuccessful attempt of obtaining a lock."]
     Immediately,
-    /// Retry after failure with exponentially longer sleep times to block the current thread.
-    /// Fail once the given duration is exceeded, similar to [Fail::Immediately]
+    #[doc = " Retry after failure with exponentially longer sleep times to block the current thread."]
+    #[doc = " Fail once the given duration is exceeded, similar to [Fail::Immediately]"]
     AfterDurationWithBackoff(Duration),
 }
-
 impl Default for Fail {
     fn default() -> Self {
         Fail::Immediately
     }
 }
-
 impl fmt::Display for Fail {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -35,57 +30,42 @@ impl fmt::Display for Fail {
         }
     }
 }
-
-quick_error! {
-    /// The error returned when acquiring a [`File`] or [`Marker`].
-    #[derive(Debug)]
-    #[allow(missing_docs)]
-    pub enum Error {
-        Io(err: std::io::Error) {
-            display("Another IO error occurred while obtaining the lock")
-            from()
-            source(err)
-        }
-        PermanentlyLocked { resource_path: PathBuf, mode: Fail, attempts: usize } {
-            display("The lock for resource '{} could not be obtained {} after {} attempt(s). The lockfile at '{}{}' might need manual deletion.", resource_path.display(), mode, attempts, resource_path.display(), super::DOT_LOCK_SUFFIX)
-        }
-    }
-}
-
+quick_error! { # [doc = " The error returned when acquiring a [`File`] or [`Marker`]."] # [derive (Debug)] # [allow (missing_docs)] pub enum Error { Io (err : std :: io :: Error) { display ("Another IO error occurred while obtaining the lock") from () source (err) } PermanentlyLocked { resource_path : PathBuf , mode : Fail , attempts : usize } { display ("The lock for resource '{} could not be obtained {} after {} attempt(s). The lockfile at '{}{}' might need manual deletion." , resource_path . display () , mode , attempts , resource_path . display () , super :: DOT_LOCK_SUFFIX) } } }
 impl File {
-    /// Create a writable lock file with failure `mode` whose content will eventually overwrite the given resource `at_path`.
-    ///
-    /// If `boundary_directory` is given, non-existing directories will be created automatically and removed in the case of
-    /// a rollback. Otherwise the containing directory is expected to exist, even though the resource doesn't have to.
+    #[doc = " Create a writable lock file with failure `mode` whose content will eventually overwrite the given resource `at_path`."]
+    #[doc = ""]
+    #[doc = " If `boundary_directory` is given, non-existing directories will be created automatically and removed in the case of"]
+    #[doc = " a rollback. Otherwise the containing directory is expected to exist, even though the resource doesn't have to."]
     pub fn acquire_to_update_resource(
         at_path: impl AsRef<Path>,
         mode: Fail,
         boundary_directory: Option<PathBuf>,
     ) -> Result<File, Error> {
-        let (lock_path, handle) = lock_with_mode(at_path.as_ref(), mode, boundary_directory, |p, d, c| {
-            gix_tempfile::writable_at(p, d, c)
-        })?;
+        let (lock_path, handle) =
+            lock_with_mode(at_path.as_ref(), mode, boundary_directory, |p, d, c| {
+                gix_tempfile::writable_at(p, d, c)
+            })?;
         Ok(File {
             inner: handle,
             lock_path,
         })
     }
 }
-
 impl Marker {
-    /// Like [`acquire_to_update_resource()`][File::acquire_to_update_resource()] but _without_ the possibility to make changes
-    /// and commit them.
-    ///
-    /// If `boundary_directory` is given, non-existing directories will be created automatically and removed in the case of
-    /// a rollback.
+    #[doc = " Like [`acquire_to_update_resource()`][File::acquire_to_update_resource()] but _without_ the possibility to make changes"]
+    #[doc = " and commit them."]
+    #[doc = ""]
+    #[doc = " If `boundary_directory` is given, non-existing directories will be created automatically and removed in the case of"]
+    #[doc = " a rollback."]
     pub fn acquire_to_hold_resource(
         at_path: impl AsRef<Path>,
         mode: Fail,
         boundary_directory: Option<PathBuf>,
     ) -> Result<Marker, Error> {
-        let (lock_path, handle) = lock_with_mode(at_path.as_ref(), mode, boundary_directory, |p, d, c| {
-            gix_tempfile::mark_at(p, d, c)
-        })?;
+        let (lock_path, handle) =
+            lock_with_mode(at_path.as_ref(), mode, boundary_directory, |p, d, c| {
+                gix_tempfile::mark_at(p, d, c)
+            })?;
         Ok(Marker {
             created_from_file: false,
             inner: handle,
@@ -93,7 +73,6 @@ impl Marker {
         })
     }
 }
-
 fn dir_cleanup(boundary: Option<PathBuf>) -> (ContainingDirectory, AutoRemove) {
     match boundary {
         None => (ContainingDirectory::Exists, AutoRemove::Tempfile),
@@ -103,7 +82,6 @@ fn dir_cleanup(boundary: Option<PathBuf>) -> (ContainingDirectory, AutoRemove) {
         ),
     }
 }
-
 fn lock_with_mode<T>(
     resource: &Path,
     mode: Fail,
@@ -112,10 +90,7 @@ fn lock_with_mode<T>(
 ) -> Result<(PathBuf, T), Error> {
     use std::io::ErrorKind::*;
     let (directory, cleanup) = dir_cleanup(boundary_directory);
-    let lock_path = resource.with_extension(resource.extension().map_or_else(
-        || DOT_LOCK_SUFFIX.chars().skip(1).collect(),
-        |ext| format!("{}{}", ext.to_string_lossy(), DOT_LOCK_SUFFIX),
-    ));
+    let lock_path = bar(resource);
     let mut attempts = 1;
     match mode {
         Fail::Immediately => try_lock(&lock_path, directory, cleanup),
@@ -150,23 +125,28 @@ fn lock_with_mode<T>(
         _ => Error::Io(err),
     })
 }
-
+fn bar(resource: &Path) -> PathBuf {
+    resource.with_extension(resource.extension().map_or_else(
+        || DOT_LOCK_SUFFIX.chars().skip(1).collect(),
+        |ext| format!("{}{}", ext.to_string_lossy(), DOT_LOCK_SUFFIX),
+    ))
+}
 fn add_lock_suffix(resource_path: &Path) -> PathBuf {
     resource_path.with_extension(resource_path.extension().map_or_else(
         || DOT_LOCK_SUFFIX.chars().skip(1).collect(),
         |ext| format!("{}{}", ext.to_string_lossy(), DOT_LOCK_SUFFIX),
     ))
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn add_lock_suffix_to_file_with_extension() {
-        assert_eq!(add_lock_suffix(Path::new("hello.ext")), Path::new("hello.ext.lock"));
+        assert_eq!(
+            add_lock_suffix(Path::new("hello.ext")),
+            Path::new("hello.ext.lock")
+        );
     }
-
     #[test]
     fn add_lock_suffix_to_file_without_extension() {
         assert_eq!(add_lock_suffix(Path::new("hello")), Path::new("hello.lock"));
