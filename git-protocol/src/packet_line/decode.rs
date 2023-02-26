@@ -61,8 +61,11 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
     }
 
     let mut buf = [0u8; U16_HEX_BYTES / 2];
-    hex::decode_to_slice(hex_bytes, &mut buf)?;
+    hex::decode_to_slice(hex_bytes, &mut buf).unwrap();
     let wanted_bytes = u16::from_be_bytes(buf) as usize;
+    if wanted_bytes == 4 {
+        return Err(Error::DataIsEmpty);
+    }
     if wanted_bytes > MAX_LINE_LEN {
         return Err(Error::DataLengthLimitExceeded(wanted_bytes));
     }
@@ -70,10 +73,6 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
         return Ok(Stream::Incomplete {
             bytes_needed: wanted_bytes - data_len,
         });
-    }
-
-    if wanted_bytes == 4 {
-        return Err(Error::DataIsEmpty);
     }
 
     let data = &data[U16_HEX_BYTES..wanted_bytes];
