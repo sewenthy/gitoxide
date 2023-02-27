@@ -143,17 +143,7 @@ pub fn git(git_dir: impl AsRef<Path>) -> Result<crate::repository::Kind, crate::
                 crate::repository::Kind::Bare
             } else {
 
-                let mut last_comp = None;
-                let is_submodule_git_dir = git_dir.file_name() != Some(OsStr::new(DOT_GIT_DIR))
-                    && git_dir.components().rev().any(|c| {
-                        if c.as_os_str() == OsStr::new(DOT_GIT_DIR) {
-                            true
-                        } else {
-                            last_comp = Some(c.as_os_str());
-                            false
-                        }
-                    })
-                    && last_comp == Some(OsStr::new(MODULES));
+                let is_submodule_git_dir = fun_name(git_dir);
                 if is_submodule_git_dir {
                     crate::repository::Kind::SubmoduleGitDir
                 } else {
@@ -162,4 +152,19 @@ pub fn git(git_dir: impl AsRef<Path>) -> Result<crate::repository::Kind, crate::
             }
         }
     })
+}
+
+fn fun_name(git_dir: &Path) -> bool {
+    let mut last_comp = None;
+    let is_submodule_git_dir = git_dir.file_name() != Some(OsStr::new(DOT_GIT_DIR))
+        && git_dir.components().rev().any(|c| {
+            if c.as_os_str() == OsStr::new(DOT_GIT_DIR) {
+                true
+            } else {
+                last_comp = Some(c.as_os_str());
+                false
+            }
+        })
+        && last_comp == Some(OsStr::new(MODULES));
+    is_submodule_git_dir
 }
