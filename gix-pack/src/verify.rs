@@ -1,6 +1,7 @@
 use std::{path::Path, sync::atomic::AtomicBool};
 
 use gix_features::progress::Progress;
+use gix_hash::{Kind, ObjectId};
 
 ///
 pub mod checksum {
@@ -47,12 +48,7 @@ pub fn checksum_on_disk_or_mmap(
         Ok(id) => id,
         Err(err) if err.kind() == std::io::ErrorKind::Interrupted => return Err(checksum::Error::Interrupted),
         Err(_io_err) => {
-            let start = std::time::Instant::now();
-            let mut hasher = gix_features::hash::hasher(object_hash);
-            hasher.update(&data[..data_len_without_trailer]);
-            progress.inc_by(data_len_without_trailer);
-            progress.show_throughput(start);
-            gix_hash::ObjectId::from(hasher.digest())
+            bar(&data, object_hash, &mut progress, &data_len_without_trailer)
         }
     };
 
@@ -61,4 +57,13 @@ pub fn checksum_on_disk_or_mmap(
     } else {
         Err(checksum::Error::Mismatch { actual, expected })
     }
+}
+
+fn bar(data: &&[u8], object_hash: Kind, progress: &mut impl Progress<SubProgress=_> + Sized, data_len_without_trailer: &usize) -> ObjectId {
+    let start = std::time::Instant::now();
+    let mut hasher = gix_features::hash::hasher(object_hash);
+    hasher.update(&data[..data_len_without_trailer]);
+    progress.inc_by(data_len_without_trailer);
+    progress.show_throughput(start);
+    gix_hash::ObjectId::from(hasher.digest())
 }
