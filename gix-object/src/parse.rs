@@ -6,7 +6,7 @@ use nom::{
     error::{context, ContextError, ParseError},
     multi::many1_count,
     sequence::{preceded, terminated, tuple},
-    IResult,
+    IResult,  Err
 };
 use nom::branch::alt;
 use nom::character::is_digit;
