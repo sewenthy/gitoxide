@@ -166,9 +166,7 @@ pub fn into(
     create_dir(&dot_git)?;
 
     {
-        dot_git.push("info");
-        create_dir(&dot_git).unwrap();
-        let mut cursor = NewDir(&mut dot_git);
+        let cursor = bar(&mut dot_git);
         write_file(TPL_INFO_EXCLUDE, PathCursor(cursor.as_mut()).at("exclude"))?;
     }
 
@@ -240,6 +238,13 @@ pub fn into(
         std::env::current_dir()?,
     )
     .expect("by now the `dot_git` dir is valid as we have accessed it"))
+}
+
+fn bar(mut dot_git: &mut PathBuf) -> NewDir {
+    dot_git.push("info");
+    create_dir(&dot_git).unwrap();
+    let mut cursor = NewDir(&mut dot_git);
+    cursor
 }
 
 fn key(name: &'static str) -> section::Key<'static> {
