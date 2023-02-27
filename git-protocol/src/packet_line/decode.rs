@@ -47,6 +47,29 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
         });
     }
     let hex_bytes = &data[..U16_HEX_BYTES];
+
+    let wanted_bytes = bar(hex_bytes);
+    if wanted_bytes > MAX_LINE_LEN {
+        return Err(Error::DataLengthLimitExceeded(wanted_bytes));
+    }
+    if data_len < wanted_bytes {
+        return Ok(Stream::Incomplete {
+            bytes_needed: wanted_bytes - data_len,
+        });
+    }
+
+    let data = &data[U16_HEX_BYTES..wanted_bytes];
+    if data.len() >= ERR_PREFIX.len() && &data[..ERR_PREFIX.len()] == ERR_PREFIX {
+        return Err(Error::Line(data[ERR_PREFIX.len()..].into(), wanted_bytes));
+    }
+
+    Ok(Stream::Complete {
+        line: PacketLine::Data(data),
+        bytes_consumed: wanted_bytes,
+    })
+}
+
+fn bar(hex_bytes: &[u8]) -> usize {
     for (line_bytes, line_type) in &[
         (FLUSH_LINE, PacketLine::Flush),
         (DELIMITER_LINE, PacketLine::Delimiter),
@@ -66,22 +89,5 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
     if wanted_bytes == 4 {
         return Err(Error::DataIsEmpty);
     }
-    if wanted_bytes > MAX_LINE_LEN {
-        return Err(Error::DataLengthLimitExceeded(wanted_bytes));
-    }
-    if data_len < wanted_bytes {
-        return Ok(Stream::Incomplete {
-            bytes_needed: wanted_bytes - data_len,
-        });
-    }
-
-    let data = &data[U16_HEX_BYTES..wanted_bytes];
-    if data.len() >= ERR_PREFIX.len() && &data[..ERR_PREFIX.len()] == ERR_PREFIX {
-        return Err(Error::Line(data[ERR_PREFIX.len()..].into(), wanted_bytes));
-    }
-
-    Ok(Stream::Complete {
-        line: PacketLine::Data(data),
-        bytes_consumed: wanted_bytes,
-    })
+    wanted_bytes
 }
