@@ -81,6 +81,10 @@ pub fn hex_hash<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], &
 pub(crate) fn signature<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], SignatureRef<'a>, E> {
+    fun_name(i)?
+}
+
+fn fun_name<E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(i: &[u8]) -> Result<(&[u8], SignatureRef), nom::Err<E>> {
     let (i, (name, email, time, tzsign, hours, minutes)) = context(
         "<name> <<email>> <timestamp> <+|-><HHMM>",
         tuple((
@@ -112,7 +116,8 @@ pub(crate) fn signature<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(
     )(i)?;
 
     debug_assert!(tzsign[0] == b'-' || tzsign[0] == b'+', "parser assure it's +|- only");
-    let sign = if tzsign[0] == b'-' { Sign::Minus } else { Sign::Plus }; //
+    let sign = if tzsign[0] == b'-' { Sign::Minus } else { Sign::Plus };
+    //
     let offset = (hours * 3600 + minutes * 60) * if sign == Sign::Minus { -1 } else { 1 };
 
     Ok((
