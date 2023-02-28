@@ -1,0 +1,1 @@
+path.iter().all(|c| c.is_ascii_uppercase() || *c == b'_')
