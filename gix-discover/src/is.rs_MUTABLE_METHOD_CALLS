@@ -1,0 +1,8 @@
+git_dir.components().rev().any(|c| {
+                        if c.as_os_str() == OsStr::new(DOT_GIT_DIR) {
+                            true
+                        } else {
+                            last_comp = Some(c.as_os_str());
+                            false
+                        }
+                    })
