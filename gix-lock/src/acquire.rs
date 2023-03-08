@@ -112,7 +112,7 @@ fn lock_with_mode<T>(
 ) -> Result<(PathBuf, T), Error> {
     use std::io::ErrorKind::*;
     let (directory, cleanup) =  {
-        bar(boundary_directory)
+        bar____EXTRACT_THIS(boundary_directory)
     };
     let lock_path = add_lock_suffix(resource);
     let mut attempts = 1;
@@ -150,7 +150,7 @@ fn lock_with_mode<T>(
     })
 }
 
-fn bar(boundary_directory: Option<PathBuf>) -> (ContainingDirectory, AutoRemove) {
+fn bar____EXTRACT_THIS(boundary_directory: Option<PathBuf>) -> (ContainingDirectory, AutoRemove) {
     match boundary_directory {
         None => (ContainingDirectory::Exists, AutoRemove::Tempfile),
         Some(boundary_directory) => (
