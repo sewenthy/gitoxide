@@ -67,10 +67,10 @@ fn parse_line(line: &BStr, line_number: usize) -> Result<Entry<'_>, Error> {
             line: line.into(),
         });
     }
-    Ok(bar(line, line_number, name1, email1, name2, email2))
+    Ok(bar____EXTRACT_THIS(line, line_number, name1, email1, name2, email2))
 }
 
-fn bar(line: &BStr, line_number: usize, name1: Option<&BStr>, email1: Option<&BStr>, name2: Option<&BStr>, email2: Option<&BStr>) -> Entry<'a> {
+fn bar____EXTRACT_THIS(line: &BStr, line_number: usize, name1: Option<&BStr>, email1: Option<&BStr>, name2: Option<&BStr>, email2: Option<&BStr>) -> Entry<'a> {
     match (name1, email1, name2, email2) {
         (Some(proper_name), Some(commit_email), None, None) => Entry::change_name_by_email(proper_name, commit_email),
         (None, Some(proper_email), None, Some(commit_email)) => {
