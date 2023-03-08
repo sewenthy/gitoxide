@@ -81,10 +81,10 @@ pub fn hex_hash<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], &
 pub(crate) fn signature<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], SignatureRef<'a>, E> {
-    bar(i)
+    bar____EXTRACT_THIS(i)
 }
 
-fn bar<E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(i: &'a [u8]) -> Result<(&'a [u8], SignatureRef<'a>), Err<E>> {
+fn bar____EXTRACT_THIS<E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(i: &'a [u8]) -> Result<(&'a [u8], SignatureRef<'a>), Err<E>> {
     let (i, (name, email, time, tzsign, hours, minutes)) = context(
         "<name> <<email>> <timestamp> <+|-><HHMM>",
         tuple((
