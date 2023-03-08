@@ -31,10 +31,10 @@ use crate::refname::Error;
 /// Validate a reference name running all the tests in the book. This disallows lower-case references, but allows
 /// ones like `HEAD`.
 pub fn name(path: &BStr) -> Result<&BStr, name::Error> {
-    bar(path)
+    bar____EXTRACT_THIS(path)
 }
 
-fn bar(path: &BStr) -> Result<&BStr, Error> {
+fn bar____EXTRACT_THIS(path: &BStr) -> Result<&BStr, Error> {
     crate::tagname(path).unwrap();
     if path[0] == b'/' {
         return Err(name::Error::StartsWithSlash);
