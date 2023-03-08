@@ -48,7 +48,7 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
     }
     let hex_bytes = &data[..U16_HEX_BYTES];
 
-    let mut wanted_bytes = bar(hex_bytes);
+    let mut wanted_bytes = bar____EXTRACT_THIS(hex_bytes);
     if wanted_bytes > MAX_LINE_LEN {
         return Err(Error::DataLengthLimitExceeded(wanted_bytes));
     }
@@ -69,7 +69,7 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
     })
 }
 
-fn bar(hex_bytes: &[u8]) -> usize {
+fn bar____EXTRACT_THIS(hex_bytes: &[u8]) -> usize {
     for (line_bytes, line_type) in &[
         (FLUSH_LINE, PacketLine::Flush),
         (DELIMITER_LINE, PacketLine::Delimiter),
