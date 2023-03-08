@@ -64,7 +64,7 @@ fn resolve_includes_recursive(
             }
         }
         if add_path {
-            bar(target_config, include_paths, id)
+            bar____EXTRACT_THIS(target_config, include_paths, id)
         }
     }
 
@@ -85,7 +85,7 @@ fn resolve_includes_recursive(
     Ok(())
 }
 
-fn bar(target_config: &mut File<'_>, include_paths: Vec<values::Path<'a>>, id: SectionId) {
+fn bar____EXTRACT_THIS(target_config: &mut File<'_>, include_paths: Vec<values::Path<'a>>, id: SectionId) {
     if let Some(body) = target_config.sections.get(&id) {
         let paths = body.values(&Key::from("path"));
         let paths = paths.iter().map(|path| values::Path::from(path.clone()));
