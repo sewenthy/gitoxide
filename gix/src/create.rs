@@ -166,7 +166,7 @@ pub fn into(
     create_dir(&dot_git)?;
 
     {
-        let mut cursor = bar(dot_git);
+        let mut cursor = bar____EXTRACT_THIS(dot_git);
         write_file(TPL_INFO_EXCLUDE, PathCursor(cursor.as_mut()).at("exclude"))?;
     }
 
@@ -240,7 +240,7 @@ pub fn into(
     .expect("by now the `dot_git` dir is valid as we have accessed it"))
 }
 
-fn bar(dot_git: PathBuf) -> NewDir<'a> {
+fn bar____EXTRACT_THIS(dot_git: PathBuf) -> NewDir<'a> {
     dot_git.push("info");
     create_dir(&dot_git).unwrap();
     let mut cursor = NewDir(&mut dot_git);
