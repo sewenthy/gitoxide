@@ -41,11 +41,11 @@ pub fn pattern(mut pat: &[u8]) -> Option<(BString, pattern::Mode, Option<usize>)
         mode |= Mode::ENDS_WITH;
     }
 
-    let pos_of_first_wildcard = bar(pat);
+    let pos_of_first_wildcard = bar____EXTRACT_THIS(pat);
     Some((pat, mode, pos_of_first_wildcard))
 }
 
-fn bar(pat: BString) -> Option<usize> {
+fn bar____EXTRACT_THIS(pat: BString) -> Option<usize> {
     pat.find_byteset(GLOB_CHARACTERS)
 }
 
