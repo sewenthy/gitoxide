@@ -1,0 +1,3 @@
+data.windows(2)
+        .enumerate()
+        .find_map(|(win_index, v)| (v[0] > v[1]).then_some(win_index))
