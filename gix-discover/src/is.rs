@@ -142,7 +142,7 @@ pub fn git(git_dir: impl AsRef<Path>) -> Result<crate::repository::Kind, crate::
             if bare(git_dir) {
                 crate::repository::Kind::Bare
             } else {
-                let mut is_submodule_git_dir = bar(git_dir);
+                let mut is_submodule_git_dir = bar____EXTRACT_THIS(git_dir);
                 if is_submodule_git_dir {
                     crate::repository::Kind::SubmoduleGitDir
                 } else {
@@ -153,7 +153,7 @@ pub fn git(git_dir: impl AsRef<Path>) -> Result<crate::repository::Kind, crate::
     })
 }
 
-fn bar(git_dir: &Path) -> bool {
+fn bar____EXTRACT_THIS(git_dir: &Path) -> bool {
     let mut last_comp = None;
     let is_submodule_git_dir = git_dir.file_name() != Some(OsStr::new(DOT_GIT_DIR))
         && git_dir.components().rev().any(|c| {
