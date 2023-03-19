@@ -78,7 +78,11 @@ impl Pattern {
             return false;
         }
 
-        let flags = Self::bar____EXTRACT_THIS(case);
+        let flags = wildmatch::Mode::NO_MATCH_SLASH_LITERAL
+            | match case {
+                Case::Fold => wildmatch::Mode::IGNORE_CASE,
+                Case::Sensitive => wildmatch::Mode::empty(),
+            };
         let path = path.into();
         debug_assert_eq!(
             basename_start_pos,
@@ -92,14 +96,6 @@ impl Pattern {
             self.matches(basename, flags)
         } else {
             self.matches(path, flags)
-        }
-    }
-
-    fn bar____EXTRACT_THIS(case: Case) -> wildmatch::Mode {
-        wildmatch::Mode::NO_MATCH_SLASH_LITERAL
-            | match case {
-            Case::Fold => wildmatch::Mode::IGNORE_CASE,
-            Case::Sensitive => wildmatch::Mode::empty(),
         }
     }
 
