@@ -1,0 +1,7 @@
+cmd.args(["config", "-l", "--show-origin"])
+cmd.args(["config", "-l", "--show-origin"])
+                .stdin(Stdio::null())
+cmd.args(["config", "-l", "--show-origin"])
+                .stdin(Stdio::null())
+                .stderr(Stdio::null())
+cmd.output()
