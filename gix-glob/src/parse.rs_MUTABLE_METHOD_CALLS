@@ -1,0 +1,3 @@
+res.extend(std::iter::repeat(b' ').take(bare_spaces))
+trailing_bytes.next()
+res.push(b' ')
