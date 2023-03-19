@@ -32,6 +32,7 @@ impl Hash for ObjectId {
 #[allow(missing_docs)]
 pub mod decode {
     use std::str::FromStr;
+    use hex::FromHex;
 
     use crate::object_id::ObjectId;
 
@@ -51,7 +52,6 @@ pub mod decode {
         ///
         /// Such a buffer can be obtained using [`oid::write_hex_to(buffer)`][super::oid::write_hex_to()]
         pub fn from_hex(buffer: &[u8]) -> Result<ObjectId, Error> {
-            use hex::FromHex;
             match buffer.len() {
                 40 => Ok(ObjectId::Sha1(<[u8; 20]>::from_hex(buffer).map_err(
                     |err| match err {
