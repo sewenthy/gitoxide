@@ -115,13 +115,17 @@ mod git {
     /// if no `git` executable was found or there were other errors during execution.
     pub fn install_config_path() -> Option<&'static BStr> {
         static PATH: once_cell::sync::Lazy<Option<BString>> = once_cell::sync::Lazy::new(|| {
-            let mut cmd = Command::new(if cfg!(windows) { "git.exe" } else { "git" });
-            cmd.args(["config", "-l", "--show-origin"])
-                .stdin(Stdio::null())
-                .stderr(Stdio::null());
-            first_file_from_config_with_origin(cmd.output().ok()?.stdout.as_slice().into()).map(ToOwned::to_owned)
+            fun_name()
         });
         PATH.as_ref().map(|b| b.as_ref())
+    }
+
+    fn fun_name() -> Option<BString> {
+        let mut cmd = Command::new(if cfg!(windows) { "git.exe" } else { "git" });
+        cmd.args(["config", "-l", "--show-origin"])
+            .stdin(Stdio::null())
+            .stderr(Stdio::null());
+        first_file_from_config_with_origin(cmd.output().ok().unwrap().stdout.as_slice().into()).map(ToOwned::to_owned)
     }
 
     fn first_file_from_config_with_origin(source: &BStr) -> Option<&BStr> {
