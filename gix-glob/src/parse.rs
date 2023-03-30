@@ -65,22 +65,26 @@ fn truncate_non_escaped_trailing_spaces(buf: &[u8]) -> BString {
             let mut trailing_bytes = buf[start_of_non_space + 1..].iter();
             let mut bare_spaces = 0;
             while let Some(b) = trailing_bytes.next() {
-                match b {
-                    b' ' => {
-                        bare_spaces += 1;
-                    }
-                    b'\\' => {
-                        res.extend(std::iter::repeat(b' ').take(bare_spaces));
-                        bare_spaces = 0;
-                        // Skip what follows, like git does, but keep spaces if possible.
-                        if trailing_bytes.next() == Some(&b' ') {
-                            res.push(b' ');
-                        }
-                    }
-                    _ => unreachable!("BUG: this must be either backslash or space"),
-                }
+                fun_name(b, &mut bare_spaces, &mut res, &mut trailing_bytes);
             }
             res
         }
+    }
+}
+
+fn fun_name(b: &u8, bare_spaces: &mut usize, res: &mut BString, trailing_bytes: &mut std::slice::Iter<u8>) {
+    match b {
+        b' ' => {
+            *bare_spaces += 1;
+        }
+        b'\\' => {
+            res.extend(std::iter::repeat(b' ').take(bare_spaces));
+            *bare_spaces = 0;
+            // Skip what follows, like git does, but keep spaces if possible.
+            if trailing_bytes.next() == Some(&b' ') {
+                res.push(b' ');
+            }
+        }
+        _ => unreachable!("BUG: this must be either backslash or space"),
     }
 }
