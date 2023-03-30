@@ -78,11 +78,7 @@ impl Pattern {
             return false;
         }
 
-        let flags = wildmatch::Mode::NO_MATCH_SLASH_LITERAL
-            | match case {
-                Case::Fold => wildmatch::Mode::IGNORE_CASE,
-                Case::Sensitive => wildmatch::Mode::empty(),
-            };
+        let flags = fun_name(case);
         let path = path.into();
         debug_assert_eq!(
             basename_start_pos,
@@ -143,6 +139,14 @@ impl Pattern {
             }
         }
     }
+}
+
+fn fun_name(case: Case) -> wildmatch::Mode {
+    wildmatch::Mode::NO_MATCH_SLASH_LITERAL
+        | match case {
+            Case::Fold => wildmatch::Mode::IGNORE_CASE,
+            Case::Sensitive => wildmatch::Mode::empty(),
+        }
 }
 
 impl fmt::Display for Pattern {
