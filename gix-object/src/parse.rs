@@ -1,23 +1,20 @@
+use crate::ByteSlice;
 use bstr::{BStr, BString, ByteVec};
 use btoi::btoi;
+use gix_actor::{Sign, SignatureRef, Time};
+use nom::branch::alt;
+use nom::character::is_digit;
 use nom::{
-    bytes::complete::{take, is_not, tag, take_until, take_while_m_n},
+    bytes::complete::{is_not, tag, take, take_until, take_while_m_n},
     combinator::{peek, recognize},
     error::{context, ContextError, ParseError},
     multi::many1_count,
     sequence::{preceded, terminated, tuple},
-    IResult,  Err
+    Err, IResult,
 };
-use nom::branch::alt;
-use nom::character::is_digit;
-use gix_actor::{Sign, SignatureRef, Time};
-
-use crate::ByteSlice;
-
 pub(crate) const NL: &[u8] = b"\n";
 pub(crate) const SPACE: &[u8] = b" ";
 const SPACE_OR_NL: &[u8] = b" \n";
-
 pub(crate) fn any_header_field_multi_line<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], (&'a [u8], BString), E> {
@@ -35,26 +32,26 @@ pub(crate) fn any_header_field_multi_line<'a, E: ParseError<&'a [u8]> + ContextE
     assert!(!o.is_empty(), "we have parsed more than one value here");
     let end = &o[o.len() - 1] as *const u8 as usize;
     let start_input = &i[0] as *const u8 as usize;
-
     let bytes = o[..o.len() - 1].as_bstr();
     let mut out = BString::from(Vec::with_capacity(bytes.len()));
     let mut lines = bytes.lines();
     out.push_str(lines.next().expect("first line"));
     for line in lines {
         out.push(b'\n');
-        out.push_str(&line[1..]); // cut leading space
+        out.push_str(&line[1..]);
     }
     Ok((&i[end - start_input + 1..], (k, out)))
 }
-
 pub(crate) fn header_field<'a, T, E: ParseError<&'a [u8]>>(
     i: &'a [u8],
     name: &'static [u8],
     parse_value: impl Fn(&'a [u8]) -> IResult<&'a [u8], T, E>,
 ) -> IResult<&'a [u8], T, E> {
-    terminated(preceded(terminated(tag(name), tag(SPACE)), parse_value), tag(NL))(i)
+    terminated(
+        preceded(terminated(tag(name), tag(SPACE)), parse_value),
+        tag(NL),
+    )(i)
 }
-
 pub(crate) fn any_header_field<'a, T, E: ParseError<&'a [u8]>>(
     i: &'a [u8],
     parse_value: impl Fn(&'a [u8]) -> IResult<&'a [u8], T, E>,
@@ -64,11 +61,9 @@ pub(crate) fn any_header_field<'a, T, E: ParseError<&'a [u8]>>(
         tag(NL),
     )(i)
 }
-
 fn is_hex_digit_lc(b: u8) -> bool {
-    matches!(b, b'0'..=b'9' | b'a'..=b'f')
+    matches ! (b , b'0' ..= b'9' | b'a' ..= b'f')
 }
-
 pub fn hex_hash<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], &'a BStr, E> {
     take_while_m_n(
         gix_hash::Kind::shortest().len_in_hex(),
@@ -77,14 +72,23 @@ pub fn hex_hash<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], &
     )(i)
     .map(|(i, hex)| (i, hex.as_bstr()))
 }
-
 pub(crate) fn signature<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], SignatureRef<'a>, E> {
-    bar____EXTRACT_THIS(i)
+    bar(i)
 }
-
-fn bar____EXTRACT_THIS<E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(i: &'a [u8]) -> Result<(&'a [u8], SignatureRef<'a>), Err<E>> {
+fn bar<'lt0, 'lt1, 'lt2, 'lt3, 'lt4, E: ParseError<&'lt1 [u8]> + ContextError<&'lt2 [u8]>>(
+    i: &'lt0 [u8],
+) -> Result<(&'lt3 [u8], SignatureRef<'lt4>), Err<E>>
+where
+    'lt0: 'lt1,
+    'lt1: 'lt2,
+    'lt2: 'lt1,
+    'lt0: 'lt3,
+    'lt1: 'lt3,
+    'lt0: 'lt4,
+    'lt1: 'lt4,
+{
     let (i, (name, email, time, tzsign, hours, minutes)) = context(
         "<name> <<email>> <timestamp> <+|-><HHMM>",
         tuple((
@@ -92,33 +96,38 @@ fn bar____EXTRACT_THIS<E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(i: &'a 
             context("<email>", terminated(take_until(&b"> "[..]), take(2usize))),
             context("<timestamp>", |i| {
                 terminated(take_until(SPACE), take(1usize))(i).and_then(|(i, v)| {
-                    btoi::<u32>(v)
-                        .map(|v| (i, v))
-                        .map_err(|_| nom::Err::Error(E::from_error_kind(i, nom::error::ErrorKind::MapRes)))
+                    btoi::<u32>(v).map(|v| (i, v)).map_err(|_| {
+                        nom::Err::Error(E::from_error_kind(i, nom::error::ErrorKind::MapRes))
+                    })
                 })
             }),
             context("+|-", alt((tag(b"-"), tag(b"+")))),
             context("HH", |i| {
                 take_while_m_n(2usize, 2, is_digit)(i).and_then(|(i, v)| {
-                    btoi::<i32>(v)
-                        .map(|v| (i, v))
-                        .map_err(|_| nom::Err::Error(E::from_error_kind(i, nom::error::ErrorKind::MapRes)))
+                    btoi::<i32>(v).map(|v| (i, v)).map_err(|_| {
+                        nom::Err::Error(E::from_error_kind(i, nom::error::ErrorKind::MapRes))
+                    })
                 })
             }),
             context("MM", |i| {
                 take_while_m_n(2usize, 2, is_digit)(i).and_then(|(i, v)| {
-                    btoi::<i32>(v)
-                        .map(|v| (i, v))
-                        .map_err(|_| nom::Err::Error(E::from_error_kind(i, nom::error::ErrorKind::MapRes)))
+                    btoi::<i32>(v).map(|v| (i, v)).map_err(|_| {
+                        nom::Err::Error(E::from_error_kind(i, nom::error::ErrorKind::MapRes))
+                    })
                 })
             }),
         )),
     )(i)?;
-
-    debug_assert!(tzsign[0] == b'-' || tzsign[0] == b'+', "parser assure it's +|- only");
-    let sign = if tzsign[0] == b'-' { Sign::Minus } else { Sign::Plus }; //
+    debug_assert!(
+        tzsign[0] == b'-' || tzsign[0] == b'+',
+        "parser assure it's +|- only"
+    );
+    let sign = if tzsign[0] == b'-' {
+        Sign::Minus
+    } else {
+        Sign::Plus
+    };
     let offset = (hours * 3600 + minutes * 60) * if sign == Sign::Minus { -1 } else { 1 };
-
     Ok((
         i,
         SignatureRef {
