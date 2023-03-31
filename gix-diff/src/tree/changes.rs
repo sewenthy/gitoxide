@@ -1,4 +1,5 @@
 use std::{borrow::BorrowMut, collections::VecDeque};
+use std::cmp::Ordering;
 
 use gix_hash::{oid, ObjectId};
 use gix_object::tree::EntryRef;
@@ -193,12 +194,7 @@ fn catchup_rhs_with_lhs<R: tree::Visit>(
     loop {
         match rhs_entries.peek() {
             Some(Ok(rhs)) => {
-                let common = lhs.filename.len().min(rhs.filename.len());
-                let comparison = lhs.filename[..common].cmp(&rhs.filename[..common]).then_with(|| {
-                    let a = lhs.filename.get(common).or_else(|| lhs.mode.is_tree().then_some(&b'/'));
-                    let b = rhs.filename.get(common).or_else(|| rhs.mode.is_tree().then_some(&b'/'));
-                    a.cmp(&b)
-                });
+                let comparison = bar(&lhs, &rhs);
                 match comparison {
                     Equal => {
                         let rhs = rhs_entries.next().transpose()?.expect("the peeked item to be present");
@@ -227,6 +223,16 @@ fn catchup_rhs_with_lhs<R: tree::Visit>(
         }
     }
     Ok(())
+}
+
+fn bar(lhs: &EntryRef, rhs: &&EntryRef) -> Ordering {
+    let common = lhs.filename.len().min(rhs.filename.len());
+    let comparison = lhs.filename[..common].cmp(&rhs.filename[..common]).then_with(|| {
+        let a = lhs.filename.get(common).or_else(|| lhs.mode.is_tree().then_some(&b'/'));
+        let b = rhs.filename.get(common).or_else(|| rhs.mode.is_tree().then_some(&b'/'));
+        a.cmp(&b)
+    });
+    comparison
 }
 
 fn catchup_lhs_with_rhs<R: tree::Visit>(
