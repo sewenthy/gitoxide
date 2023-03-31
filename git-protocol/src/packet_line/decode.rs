@@ -1,32 +1,13 @@
 use crate::{
     packet_line::{
-        DELIMITER_LINE, ERR_PREFIX, FLUSH_LINE, MAX_DATA_LEN, MAX_LINE_LEN, RESPONSE_END_LINE, U16_HEX_BYTES,
+        DELIMITER_LINE, ERR_PREFIX, FLUSH_LINE, MAX_DATA_LEN, MAX_LINE_LEN, RESPONSE_END_LINE,
+        U16_HEX_BYTES,
     },
     PacketLine,
 };
 use bstr::BString;
 use quick_error::quick_error;
-
-quick_error! {
-    #[derive(Debug)]
-    pub enum Error {
-        HexDecode(err: hex::FromHexError) {
-            display("Failed to decode the first four hex bytes indicating the line length")
-            from()
-            source(err)
-        }
-        DataLengthLimitExceeded(length_in_bytes: usize) {
-            display("The data received claims to be larger than than the maximum allowed size: got {}, exceeds {}", length_in_bytes, MAX_DATA_LEN)
-        }
-        DataIsEmpty {
-            display("Received an invalid empty line")
-        }
-        Line(data: BString, bytes_consumed: usize) {
-            display("{}", data)
-        }
-    }
-}
-
+quick_error! { # [derive (Debug)] pub enum Error { HexDecode (err : hex :: FromHexError) { display ("Failed to decode the first four hex bytes indicating the line length") from () source (err) } DataLengthLimitExceeded (length_in_bytes : usize) { display ("The data received claims to be larger than than the maximum allowed size: got {}, exceeds {}" , length_in_bytes , MAX_DATA_LEN) } DataIsEmpty { display ("Received an invalid empty line") } Line (data : BString , bytes_consumed : usize) { display ("{}" , data) } } }
 #[derive(Debug, Clone)]
 pub enum Stream<'a> {
     Complete {
@@ -34,11 +15,10 @@ pub enum Stream<'a> {
         bytes_consumed: usize,
     },
     Incomplete {
-        /// The amount of additional bytes needed for the parsing to complete
+        #[doc = " The amount of additional bytes needed for the parsing to complete"]
         bytes_needed: usize,
     },
 }
-
 pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
     let data_len = data.len();
     if data_len < U16_HEX_BYTES {
@@ -47,8 +27,10 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
         });
     }
     let hex_bytes = &data[..U16_HEX_BYTES];
-
-    let mut wanted_bytes = bar____EXTRACT_THIS(hex_bytes);
+    let mut wanted_bytes = match bar(hex_bytes) {
+        RetBar::Ok(x) => x,
+        RetBar::Return(x) => return x,
+    };
     if wanted_bytes > MAX_LINE_LEN {
         return Err(Error::DataLengthLimitExceeded(wanted_bytes));
     }
@@ -57,37 +39,38 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
             bytes_needed: wanted_bytes - data_len,
         });
     }
-
     let data = &data[U16_HEX_BYTES..wanted_bytes];
     if data.len() >= ERR_PREFIX.len() && &data[..ERR_PREFIX.len()] == ERR_PREFIX {
         return Err(Error::Line(data[ERR_PREFIX.len()..].into(), wanted_bytes));
     }
-
     Ok(Stream::Complete {
         line: PacketLine::Data(data),
         bytes_consumed: wanted_bytes,
     })
 }
-
-fn bar____EXTRACT_THIS(hex_bytes: &[u8]) -> usize {
+fn bar(hex_bytes: &[u8]) -> RetBar<usize, Result<Stream, Error>> {
     for (line_bytes, line_type) in &[
         (FLUSH_LINE, PacketLine::Flush),
         (DELIMITER_LINE, PacketLine::Delimiter),
         (RESPONSE_END_LINE, PacketLine::ResponseEnd),
     ] {
         if hex_bytes == *line_bytes {
-            return Ok(Stream::Complete {
+            return RetBar::Return(Ok(Stream::Complete {
                 line: *line_type,
                 bytes_consumed: 4,
-            });
+            }));
         }
     }
-
     let mut buf = [0u8; U16_HEX_BYTES / 2];
     hex::decode_to_slice(hex_bytes, &mut buf).unwrap();
     let wanted_bytes = u16::from_be_bytes(buf) as usize;
     if wanted_bytes == 4 {
-        return Err(Error::DataIsEmpty);
+        return RetBar::Return(Err(Error::DataIsEmpty));
     }
-    wanted_bytes
+    let result = wanted_bytes;
+    RetBar::Ok(result)
+}
+enum RetBar<A, B> {
+    Ok(A),
+    Return(B),
 }
