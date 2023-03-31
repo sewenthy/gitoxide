@@ -5,9 +5,7 @@ use bstr::{BString, ByteSlice};
 use git_ref::Category;
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
-
 const DOT: &[u8] = b".";
-
 pub(crate) fn resolve_includes(
     conf: &mut File<'_>,
     config_path: Option<&std::path::Path>,
@@ -15,7 +13,6 @@ pub(crate) fn resolve_includes(
 ) -> Result<(), from_paths::Error> {
     resolve_includes_recursive(conf, config_path, 0, options)
 }
-
 fn resolve_includes_recursive(
     target_config: &mut File<'_>,
     target_config_path: Option<&Path>,
@@ -31,9 +28,7 @@ fn resolve_includes_recursive(
             Ok(())
         };
     }
-
     let mut paths_to_include = Vec::new();
-
     let mut incl_section_ids = Vec::new();
     for name in ["include", "includeIf"] {
         for id in target_config.section_ids_by_name(name).unwrap_or_default() {
@@ -48,7 +43,6 @@ fn resolve_includes_recursive(
         }
     }
     incl_section_ids.sort_by(|a, b| a.1.cmp(&b.1));
-
     let mut include_paths = Vec::new();
     for (id, _) in incl_section_ids {
         let mut add_path = false;
@@ -64,18 +58,15 @@ fn resolve_includes_recursive(
             }
         }
         if add_path {
-            bar____EXTRACT_THIS(target_config, include_paths, id)
+            bar(target_config, &mut include_paths, &id)
         }
     }
-
     for path in include_paths {
         let path = resolve(path, target_config_path, options)?;
-
         if path.is_file() {
             paths_to_include.push(path);
         }
     }
-
     dbg!(&paths_to_include);
     for config_path in paths_to_include {
         let mut include_config = File::at(&config_path)?;
@@ -84,15 +75,19 @@ fn resolve_includes_recursive(
     }
     Ok(())
 }
-
-fn bar____EXTRACT_THIS(target_config: &mut File<'_>, include_paths: Vec<values::Path<'a>>, id: SectionId) {
-    if let Some(body) = target_config.sections.get(&id) {
+fn bar<'lt0, 'lt1>(
+    target_config: &mut File<'lt0>,
+    include_paths: &mut Vec<values::Path<'lt1>>,
+    id: &SectionId,
+) where
+    'lt0: 'lt1,
+{
+    if let Some(body) = target_config.sections.get(&(*id)) {
         let paths = body.values(&Key::from("path"));
         let paths = paths.iter().map(|path| values::Path::from(path.clone()));
         include_paths.extend(paths);
     }
 }
-
 fn include_condition_match(
     condition: &str,
     target_config_path: Option<&Path>,
@@ -101,13 +96,18 @@ fn include_condition_match(
     let (prefix, condition) = condition.split_once(':')?;
     match prefix {
         "gitdir" => is_match(target_config_path, options, options.git_dir?, condition).then(|| ()),
-        "gitdir/i" => is_match(target_config_path, options, options.git_dir?, &condition.to_lowercase()).then(|| ()),
+        "gitdir/i" => is_match(
+            target_config_path,
+            options,
+            options.git_dir?,
+            &condition.to_lowercase(),
+        )
+        .then(|| ()),
         "onbranch" => {
             let branch_name = options.branch_name?;
             let (_, branch_name) = branch_name
                 .category_and_short_name()
                 .filter(|(cat, _)| *cat == Category::LocalBranch)?;
-
             let mut condition = Cow::Borrowed(condition);
             if condition.starts_with('/') {
                 condition = Cow::Owned(format!("**{}", condition));
@@ -117,14 +117,17 @@ fn include_condition_match(
             }
             let pattern = condition.as_bytes().as_bstr();
             dbg!(&branch_name, &pattern);
-            let result = git_glob::wildmatch(pattern, branch_name, git_glob::wildmatch::Mode::NO_MATCH_SLASH_LITERAL);
+            let result = git_glob::wildmatch(
+                pattern,
+                branch_name,
+                git_glob::wildmatch::Mode::NO_MATCH_SLASH_LITERAL,
+            );
             dbg!(&result);
             result.then(|| ())
         }
         _ => None,
     }
 }
-
 fn is_match(
     target_config_path: Option<&Path>,
     options: from_paths::Options<'_>,
@@ -136,15 +139,19 @@ fn is_match(
     }
     let condition_path = values::Path::from(Cow::Borrowed(condition.as_bytes()));
     if let Ok(condition_path) = condition_path.interpolate(options.git_install_dir) {
-        let mut condition_path = git_path::to_unix_separators(git_path::into_bstr(condition_path)).into_owned();
-
+        let mut condition_path =
+            git_path::to_unix_separators(git_path::into_bstr(condition_path)).into_owned();
         dbg!(&target_config_path);
         if condition_path.starts_with(DOT) {
             if let Some(parent_dir_path) = target_config_path {
                 if let Some(parent_path) = parent_dir_path.parent() {
                     let parent_dir = git_path::into_bstr(parent_path);
-                    let v = bstr::concat(&[parent_dir.as_bstr(), condition_path[DOT.len()..].as_bstr()]);
-                    condition_path = git_path::to_unix_separators(Cow::Owned(v.into())).into_owned();
+                    let v = bstr::concat(&[
+                        parent_dir.as_bstr(),
+                        condition_path[DOT.len()..].as_bstr(),
+                    ]);
+                    condition_path =
+                        git_path::to_unix_separators(Cow::Owned(v.into())).into_owned();
                 }
             }
         }
@@ -159,9 +166,7 @@ fn is_match(
             condition_path.push(b'*');
             condition_path.push(b'*');
         }
-
         let git_dir_value = git_path::into_bstr(git_dir).to_mut().replace("\\", "/");
-
         println!();
         dbg!(&condition_path.as_bstr(), &git_dir_value.as_bstr());
         let mut result = git_glob::wildmatch(
@@ -171,10 +176,13 @@ fn is_match(
         );
         if !result {
             if let Some(target_config_path) = target_config_path {
-                if let Ok(expanded_git_dir_value) =
-                    git_path::realpath(git_path::from_byte_slice(&git_dir_value), target_config_path, 32)
-                {
-                    let git_dir_value = git_path::into_bstr(expanded_git_dir_value).replace("\\", "/");
+                if let Ok(expanded_git_dir_value) = git_path::realpath(
+                    git_path::from_byte_slice(&git_dir_value),
+                    target_config_path,
+                    32,
+                ) {
+                    let git_dir_value =
+                        git_path::into_bstr(expanded_git_dir_value).replace("\\", "/");
                     dbg!(&condition_path.as_bstr(), git_dir_value.as_bstr(),);
                     result = git_glob::wildmatch(
                         condition_path.as_bstr(),
@@ -189,7 +197,6 @@ fn is_match(
     }
     false
 }
-
 fn resolve(
     path: values::Path<'_>,
     target_config_path: Option<&Path>,
