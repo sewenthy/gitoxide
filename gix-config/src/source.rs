@@ -89,19 +89,23 @@ impl Source {
                     })
                     .map(Cow::Owned),
             },
-            User => env_var("GIT_CONFIG_GLOBAL")
-                .map(|global_override| PathBuf::from(global_override).into())
-                .or_else(|| {
-                    env_var("HOME").map(|home| {
-                        let mut p = PathBuf::from(home);
-                        p.push(".gitconfig");
-                        p.into()
-                    })
-                }),
+            User => Self::bar(env_var),
             Local => Some(Path::new("config").into()),
             Worktree => Some(Path::new("config.worktree").into()),
             Env | Cli | Api | EnvOverride => None,
         }
+    }
+
+    fn bar(env_var: &mut dyn FnMut(&str) -> Option<OsString>) -> Option<Cow<Path>> {
+        env_var("GIT_CONFIG_GLOBAL")
+            .map(|global_override| PathBuf::from(global_override).into())
+            .or_else(|| {
+                env_var("HOME").map(|home| {
+                    let mut p = PathBuf::from(home);
+                    p.push(".gitconfig");
+                    p.into()
+                })
+            })
     }
 }
 
