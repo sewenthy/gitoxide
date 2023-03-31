@@ -112,13 +112,7 @@ fn lock_with_mode<T>(
 ) -> Result<(PathBuf, T), Error> {
     use std::io::ErrorKind::*;
     let (directory, cleanup) =  {
-        match boundary_directory {
-            None => (ContainingDirectory::Exists, AutoRemove::Tempfile),
-            Some(boundary_directory) => (
-                ContainingDirectory::CreateAllRaceProof(Default::default()),
-                AutoRemove::TempfileAndEmptyParentDirectoriesUntil { boundary_directory },
-            ),
-        }
+        bar(boundary_directory)
     };
     let lock_path = add_lock_suffix(resource);
     let mut attempts = 1;
@@ -154,6 +148,16 @@ fn lock_with_mode<T>(
         },
         _ => Error::Io(err),
     })
+}
+
+fn bar(boundary_directory: Option<PathBuf>) -> (ContainingDirectory, AutoRemove) {
+    match boundary_directory {
+        None => (ContainingDirectory::Exists, AutoRemove::Tempfile),
+        Some(boundary_directory) => (
+            ContainingDirectory::CreateAllRaceProof(Default::default()),
+            AutoRemove::TempfileAndEmptyParentDirectoriesUntil { boundary_directory },
+        ),
+    }
 }
 
 fn add_lock_suffix(resource_path: &Path) -> PathBuf {
