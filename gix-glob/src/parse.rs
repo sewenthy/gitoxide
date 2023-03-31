@@ -1,3 +1,4 @@
+use std::slice::Iter;
 use bstr::{BString, ByteSlice};
 
 use crate::{pattern, pattern::Mode};
@@ -65,22 +66,26 @@ fn truncate_non_escaped_trailing_spaces(buf: &[u8]) -> BString {
             let mut trailing_bytes = buf[start_of_non_space + 1..].iter();
             let mut bare_spaces = 0;
             while let Some(b) = trailing_bytes.next() {
-                match b {
-                    b' ' => {
-                        bare_spaces += 1;
-                    }
-                    b'\\' => {
-                        res.extend(std::iter::repeat(b' ').take(bare_spaces));
-                        bare_spaces = 0;
-                        // Skip what follows, like git does, but keep spaces if possible.
-                        if trailing_bytes.next() == Some(&b' ') {
-                            res.push(b' ');
-                        }
-                    }
-                    _ => unreachable!("BUG: this must be either backslash or space"),
-                }
+                bar(&mut res, &mut trailing_bytes, bare_spaces, b)
             }
             res
         }
+    }
+}
+
+fn bar(res: &mut BString, trailing_bytes: &mut Iter<u8>, mut bare_spaces: usize, b: &u8) {
+    match b {
+        b' ' => {
+            bare_spaces += 1;
+        }
+        b'\\' => {
+            res.extend(std::iter::repeat(b' ').take(bare_spaces));
+            bare_spaces = 0;
+            // Skip what follows, like git does, but keep spaces if possible.
+            if trailing_bytes.next() == Some(&b' ') {
+                res.push(b' ');
+            }
+        }
+        _ => unreachable!("BUG: this must be either backslash or space"),
     }
 }
