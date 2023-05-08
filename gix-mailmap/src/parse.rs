@@ -67,7 +67,7 @@ fn parse_line(line: &BStr, line_number: usize) -> Result<Entry<'_>, Error> {
             line: line.into(),
         });
     }
-    Ok(match (name1, email1, name2, email2) {
+    Ok(/* START SELECTION */match (name1, email1, name2, email2) {
         (Some(proper_name), Some(commit_email), None, None) => Entry::change_name_by_email(proper_name, commit_email),
         (None, Some(proper_email), None, Some(commit_email)) => {
             Entry::change_email_by_email(proper_email, commit_email)
@@ -85,7 +85,7 @@ fn parse_line(line: &BStr, line_number: usize) -> Result<Entry<'_>, Error> {
                 message: "Emails without a name or email to map to are invalid".into(),
             })
         }
-    })
+    }/* END SELECTION */)
 }
 
 fn parse_name_and_email(
