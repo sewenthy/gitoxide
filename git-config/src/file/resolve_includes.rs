@@ -64,11 +64,13 @@ fn resolve_includes_recursive(
             }
         }
         if add_path {
+            // START SELECTION //
             if let Some(body) = target_config.sections.get(&id) {
                 let paths = body.values(&Key::from("path"));
                 let paths = paths.iter().map(|path| values::Path::from(path.clone()));
                 include_paths.extend(paths);
             }
+            // END SELECTION //
         }
     }
 
