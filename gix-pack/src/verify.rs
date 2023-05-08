@@ -20,9 +20,11 @@ pub mod checksum {
 
 /// Returns the `index` at which the following `index + 1` value is not an increment over the value at `index`.
 pub fn fan(data: &[u32]) -> Option<usize> {
+    // START SELECTION //
     data.windows(2)
         .enumerate()
         .find_map(|(win_index, v)| (v[0] > v[1]).then_some(win_index))
+    // END SELECTION //
 }
 
 /// Calculate the hash of the given kind by trying to read the file from disk at `data_path` or falling back on the mapped content in `data`.
