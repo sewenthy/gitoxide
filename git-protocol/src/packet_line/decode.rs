@@ -47,6 +47,7 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
         });
     }
     let hex_bytes = &data[..U16_HEX_BYTES];
+    // START SELECTION //
     for (line_bytes, line_type) in &[
         (FLUSH_LINE, PacketLine::Flush),
         (DELIMITER_LINE, PacketLine::Delimiter),
@@ -61,11 +62,16 @@ pub fn streaming(data: &[u8]) -> Result<Stream, Error> {
     }
 
     let mut buf = [0u8; U16_HEX_BYTES / 2];
+    // we change ? to unwrap() here because our naive transformation needs to use the custom desugaring
+    // of ? to match x { Ok(x) => x, Err(e) => ...} did not account for the custom type above
+    // which needs to wrap e with RetBar::Ret(Err(Error::from(e)))
+    // we also test IJ and RA against this version rather than ? which they also fail on
     hex::decode_to_slice(hex_bytes, &mut buf).unwrap();
     let wanted_bytes = u16::from_be_bytes(buf) as usize;
     if wanted_bytes == 4 {
         return Err(Error::DataIsEmpty);
     }
+    // END SELECTION //
     if wanted_bytes > MAX_LINE_LEN {
         return Err(Error::DataLengthLimitExceeded(wanted_bytes));
     }
