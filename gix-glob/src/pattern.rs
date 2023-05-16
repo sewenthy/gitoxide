@@ -78,11 +78,11 @@ impl Pattern {
             return false;
         }
 
-        let flags = wildmatch::Mode::NO_MATCH_SLASH_LITERAL
+        let flags = /* START SELECTION */ wildmatch::Mode::NO_MATCH_SLASH_LITERAL
             | match case {
                 Case::Fold => wildmatch::Mode::IGNORE_CASE,
                 Case::Sensitive => wildmatch::Mode::empty(),
-            };
+            }/* START SELECTION */;
         let path = path.into();
         debug_assert_eq!(
             basename_start_pos,
