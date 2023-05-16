@@ -113,13 +113,17 @@ mod git {
 
     /// Returns the file that contains git configuration coming with the installation of the `git` file in the current `PATH`, or `None`
     /// if no `git` executable was found or there were other errors during execution.
+    /* we reconciled the type of the closure and the caller fn because we currently don't depend on
+    type inference. */
     pub fn install_config_path() -> Option<BString> {
         static PATH: once_cell::sync::Lazy<Option<BString>> = once_cell::sync::Lazy::new(|| {
+            /* START SELECTION */
             let mut cmd = Command::new(if cfg!(windows) { "git.exe" } else { "git" });
             cmd.args(["config", "-l", "--show-origin"])
                 .stdin(Stdio::null())
                 .stderr(Stdio::null());
             first_file_from_config_with_origin(cmd.output().ok()?.stdout.as_slice().into()).map(ToOwned::to_owned)
+            /* END SELECTION */
         });
         PATH.as_ref().map(|b| b.clone())
     }
