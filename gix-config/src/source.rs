@@ -89,7 +89,7 @@ impl Source {
                     })
                     .map(Cow::Owned),
             },
-            User => env_var("GIT_CONFIG_GLOBAL")
+            User => /* START SELECTION */ env_var("GIT_CONFIG_GLOBAL")
                 .map(|global_override| PathBuf::from(global_override).into())
                 .or_else(|| {
                     env_var("HOME").map(|home| {
@@ -97,7 +97,7 @@ impl Source {
                         p.push(".gitconfig");
                         p.into()
                     })
-                }),
+                })/* END SELECTION */ ,
             Local => Some(Path::new("config").into()),
             Worktree => Some(Path::new("config.worktree").into()),
             Env | Cli | Api | EnvOverride => None,
