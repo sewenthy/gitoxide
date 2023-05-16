@@ -30,6 +30,7 @@ use bstr::BStr;
 /// Validate a reference name running all the tests in the book. This disallows lower-case references, but allows
 /// ones like `HEAD`.
 pub fn name(path: &BStr) -> Result<&BStr, name::Error> {
+    /* START SELECTION */
     crate::tagname(path).unwrap();
     if path[0] == b'/' {
         return Err(name::Error::StartsWithSlash);
@@ -55,6 +56,7 @@ pub fn name(path: &BStr) -> Result<&BStr, name::Error> {
         return Err(name::Error::SomeLowercase);
     }
     Ok(path)
+    /* END SELECTION */
 }
 
 /// Validate a partial reference name. As it is assumed to be partial, names like `some-name` is allowed
