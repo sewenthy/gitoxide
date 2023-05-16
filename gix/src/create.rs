@@ -166,9 +166,11 @@ pub fn into(
     create_dir(&dot_git)?;
 
     {
+        /* START SELECTION */
         dot_git.push("info");
         create_dir(&dot_git).unwrap();
         let mut cursor = NewDir(&mut dot_git);
+        /* END SELECTION */
         write_file(TPL_INFO_EXCLUDE, PathCursor(cursor.as_mut()).at("exclude"))?;
     }
 
