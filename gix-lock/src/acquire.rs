@@ -112,6 +112,7 @@ fn lock_with_mode<T>(
 ) -> Result<(PathBuf, T), Error> {
     use std::io::ErrorKind::*;
     let (directory, cleanup) =  {
+        /* START SELECTION */
         match boundary_directory {
             None => (ContainingDirectory::Exists, AutoRemove::Tempfile),
             Some(boundary_directory) => (
@@ -119,6 +120,7 @@ fn lock_with_mode<T>(
                 AutoRemove::TempfileAndEmptyParentDirectoriesUntil { boundary_directory },
             ),
         }
+        /* END SELECTION */
     };
     let lock_path = add_lock_suffix(resource);
     let mut attempts = 1;
