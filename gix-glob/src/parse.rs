@@ -65,6 +65,7 @@ fn truncate_non_escaped_trailing_spaces(buf: &[u8]) -> BString {
             let mut trailing_bytes = buf[start_of_non_space + 1..].iter();
             let mut bare_spaces = 0;
             while let Some(b) = trailing_bytes.next() {
+                /* START SELECTION */
                 match b {
                     b' ' => {
                         bare_spaces += 1;
@@ -79,6 +80,7 @@ fn truncate_non_escaped_trailing_spaces(buf: &[u8]) -> BString {
                     }
                     _ => unreachable!("BUG: this must be either backslash or space"),
                 }
+                /* END SELECTION */
             }
             res
         }
