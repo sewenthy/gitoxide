@@ -7,7 +7,7 @@ use nom::{
     multi::many1_count,
     sequence::{preceded, terminated, tuple},
     IResult,
-    Err,
+    Err, /* we add this top-level import because our qualified name-resolution is still WIP */
 };
 use nom::branch::alt;
 use nom::character::is_digit;
@@ -82,6 +82,7 @@ pub fn hex_hash<'a, E: ParseError<&'a [u8]>>(i: &'a [u8]) -> IResult<&'a [u8], &
 pub(crate) fn signature<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], SignatureRef<'a>, E> {
+    /* START SELECTION */
     let (i, (name, email, time, tzsign, hours, minutes)) = context(
         "<name> <<email>> <timestamp> <+|-><HHMM>",
         tuple((
@@ -128,4 +129,5 @@ pub(crate) fn signature<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(
             },
         },
     ))
+    /* END SELECTION */
 }
