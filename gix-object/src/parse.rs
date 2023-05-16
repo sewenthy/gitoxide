@@ -7,6 +7,7 @@ use nom::{
     multi::many1_count,
     sequence::{preceded, terminated, tuple},
     IResult,
+    Err,
 };
 use nom::branch::alt;
 use nom::character::is_digit;
