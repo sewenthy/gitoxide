@@ -112,10 +112,10 @@ fn lock_with_mode<T>(
 ) -> Result<(PathBuf, T), Error> {
     use std::io::ErrorKind::*;
     let (directory, cleanup) = dir_cleanup(boundary_directory);
-    let lock_path = resource.with_extension(resource.extension().map_or_else(
+    let lock_path = /* START SELECTION */ resource.with_extension(resource.extension().map_or_else(
         || DOT_LOCK_SUFFIX.chars().skip(1).collect(),
         |ext| format!("{}{}", ext.to_string_lossy(), DOT_LOCK_SUFFIX),
-    ));
+    )) /* END SELECTION */;
     let mut attempts = 1;
     match mode {
         Fail::Immediately => try_lock(&lock_path, directory, cleanup),
